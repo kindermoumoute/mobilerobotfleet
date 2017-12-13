@@ -1,0 +1,10 @@
+version: '2.2'
+services:
+  robotino:
+    image: rustemsuniev/curl-container:latest
+    volumes:
+      - .:/robotino
+    command: /robotino/mobilerobotfleet
+    scale: 5
+    expose:
+      - "8182"
