@@ -14,16 +14,39 @@
 
 package main
 
+import (
+	"net/http"
+	"log"
+)
+
+var (
+	port = "8182"
+	fleetIPs = []string{
+		"172.26.X.X",
+		"172.26.X.X",
+	}
+)
+
+
+func main() {
+	smartFleet,err := newSmartFleet()
+	if err != nil {
+		// TODO: possibilité d'envoyer l'erreur à la supervision
+		panic(err)
+	}
+
+	// exposition de l'API
+	http.HandleFunc("/", smartFleet.EndPoint)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
 // robotino	robotino
 // root		dorp6
 
-func main() {
-	// 0 : tester si etcd fonctionne sur un robotino
-	// 1 : implémenter la fausse abstraction, avec une API complète
-	// 2 : virtualiser un environnement avec les 5 robots dans le même réseau
-	// 3 : implémenter une abstraction utilisant etcd
-	// 4 : implémenter une working queue et une running queue https://stackoverflow.com/questions/34629860/how-would-you-implement-a-working-queue-in-etcd
-	// docs :
-	// https://godoc.org/github.com/coreos/etcd/clientv3
-	// https://coreos.com/etcd/docs/latest/learning/api.html
-}
+// TODO 1 (en cours): implémenter la fausse abstraction, avec une API complète
+// TODO 2: virtualiser un environnement avec les 5 robots dans le même réseau
+// TODO 3: implémenter une abstraction utilisant etcd
+// TODO 4: implémenter une working queue et une running queue https://stackoverflow.com/questions/34629860/how-would-you-implement-a-working-queue-in-etcd
+//
+// docs :
+// https://godoc.org/github.com/coreos/etcd/clientv3
+// https://coreos.com/etcd/docs/latest/learning/api.html
