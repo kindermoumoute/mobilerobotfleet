@@ -15,20 +15,40 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/kindermoumoute/mobilerobotfleet/smartfleet"
 )
 
-var (
-	port     = "8182"
-	fleetIPs = []string{
-		"172.26.X.X",
-		"172.26.X.X",
-	}
+// default values
+const (
+	DefaultHTTPAddr = ":8080"
+	DefaultRaftAddr = ":8182"
 )
+
+var HTTPport string
+
+//var RAFTport string
+//var nodeID string
+
+func init() {
+	flag.StringVar(&HTTPport, "haddr", DefaultHTTPAddr, "Set the HTTP bind address")
+	//flag.StringVar(&RAFTport, "raddr", DefaultRaftAddr, "Set Raft bind address")
+	//flag.StringVar(&nodeID, "id", "", "Node ID")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <raft-data-path> \n", os.Args[0])
+		flag.PrintDefaults()
+	}
+}
 
 func main() {
-	smartFleet, err := newSmartFleet()
+	flag.Parse()
+
+	smartFleet, err := smartfleet.New()
 	if err != nil {
 		// TODO: possibilité d'envoyer l'erreur à la supervision
 		panic(err)
@@ -36,14 +56,14 @@ func main() {
 
 	// exposition de l'API
 	http.HandleFunc("/", smartFleet.EndPoint)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(HTTPport, nil))
 }
 
 // robotino	robotino
 // root		dorp6
 
 // (DONE): implémenter la fausse abstraction, avec une API complète
-// TODO: virtualiser un environnement avec les 5 robots dans le même réseau
+// (DONE): virtualiser un environnement avec les 5 robots dans le même réseau
 // TODO: implémenter une abstraction utilisant etcd
 // TODO: implémenter une working queue et une running queue https://stackoverflow.com/questions/34629860/how-would-you-implement-a-working-queue-in-etcd
 //
