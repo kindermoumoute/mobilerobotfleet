@@ -10,25 +10,38 @@ import (
 	"github.com/coreos/etcd/embed"
 )
 
+const (
+	statusAlive = "alive"
+	DefaultIP   = "127.0.0.1"
+)
+
 var (
-	myIP     = "192.168.30.108"
-	siblings = []string{
-		"192.168.30.109",
-		"192.168.30.66",
+	MyIP = DefaultIP
+	Pool = []string{
+		DefaultIP,
 	}
 )
 
 type SmartFleet struct {
-	cmd     terminal
-	myIP    string
-	sibling []string
+	Kapi      client.KeysAPI
+	Heartbeat time.Time
+	Status    string
 
-	EtcdClient client.Client
-	Kapi       client.KeysAPI
-	etcd       *embed.Etcd
+	cmd           terminal
+	myIP          string
+	peer          []string
+	etcd          *embed.Etcd
+	etcdClient    client.Client
+	pollRate      time.Duration
+	heartbeatRate time.Duration
 }
 
-func New() (*SmartFleet, error) {
+func New(poolIPs string) (*SmartFleet, error) {
+	Pool = []string{}
+	for _, peer := range strings.Split(poolIPs, ",") {
+		Pool = append(Pool, peer)
+	}
+
 	s := &SmartFleet{}
 	if runtime.GOOS == "windows" {
 		s.cmd = windows{}
@@ -41,17 +54,16 @@ func New() (*SmartFleet, error) {
 		return s, err
 	}
 	s.myIP = strings.Trim(string(myIP), "\n")
-	s.sibling, err = s.cmd.getAddr(s.myIP)
+	s.peer, err = s.cmd.getAddr(s.myIP)
 	if err != nil {
 		return s, err
 	}
 
-	for i, ip := range s.sibling {
-		s.sibling[i] = "http://" + ip + ":2380"
-	}
-
-	// run etcd server
 	go s.runServer()
-
+	//
+	//s.Status = statusAlive
+	//s.pollRate = 10 * time.Second
+	//s.heartbeatRate = 1 * time.Minute
+	//s.Heartbeat = time.Now()
 	return s, err
 }

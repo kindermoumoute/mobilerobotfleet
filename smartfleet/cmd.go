@@ -26,10 +26,16 @@ func (w windows) runScript() ([]byte, error) {
 }
 
 func (w windows) getMyIP() ([]byte, error) {
-	return []byte(myIP), nil
+	return []byte(MyIP), nil
 }
 func (w windows) getAddr(s string) ([]string, error) {
-	return siblings, nil
+	peers := []string{}
+	for _, s := range Pool {
+		if s != MyIP {
+			peers = append(peers, s)
+		}
+	}
+	return peers, nil
 }
 
 type other struct {

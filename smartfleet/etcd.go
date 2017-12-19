@@ -11,21 +11,21 @@ import (
 	"github.com/coreos/etcd/pkg/types"
 )
 
-func (s *SmartFleet) newClient() {
+func (s *SmartFleet) NewClient() {
 	var err error
-	cfg := client.Config{
+	cfg := client.Config{ //192.168.30.107
 		Endpoints: []string{"http://127.0.0.1:2379"},
 		Transport: client.DefaultTransport,
 		// set timeout per request to fail fast when the target endpoint is unavailable
 		HeaderTimeoutPerRequest: time.Second,
 	}
-	s.EtcdClient, err = client.New(cfg)
+	s.etcdClient, err = client.New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//	s.Kapi = client.NewKeysAPI(s.EtcdClient)
-	//	// set "/foo" key with "bar" value
-	//	log.Print("Setting '/foo' key with 'bar' value")
+	//s.Kapi = client.NewKeysAPI(s.etcdClient)
+	//// set "/foo" key with "bar" value
+	//log.Print("Setting '/foo' key with 'bar' value")
 	//	resp, err := s.Kapi.Set(context.Background(), "/foo", "bar", nil)
 	//	if err != nil {
 	//		log.Fatal(err)
@@ -51,12 +51,6 @@ func (s *SmartFleet) runServer() {
 	cfg := embed.NewConfig()
 	cfg.Name = s.myIP
 	cfg.Dir = cfg.Name + ".etcd"
-	//listenClientURL, _ := url.Parse("http://" + s.myIP + ":2379")
-	//cfg.ACUrls = []url.URL{*listenClientURL}
-	//cfg.LCUrls = []url.URL{*listenClientURL}
-	//listenPeerURL, _ := url.Parse("http://" + s.myIP + ":2380")
-	//cfg.APUrls = []url.URL{*listenPeerURL}
-	//cfg.LPUrls = []url.URL{*listenPeerURL}
 
 	u, _ := url.Parse("http://0.0.0.0:2380")
 	cfg.LPUrls = []url.URL{
@@ -74,9 +68,10 @@ func (s *SmartFleet) runServer() {
 	cfg.ClusterState = embed.ClusterStateFlagNew
 	cfg.InitialCluster = cfg.Name + "=" + u.String()
 	cfg.APUrls, _ = types.NewURLs([]string{u.String()})
-	//cfg.InitialCluster = cfg.InitialClusterFromName("")
-	//cfg.Dir = "default.etcd"
-	//cfg.InitialCluster += ",default=" + s.sibling[0]
+	for _, ip := range s.peer {
+		cfg.InitialCluster += "," + ip + "=http://" + ip + ":2380"
+	}
+
 	cfg.ClusterState = embed.ClusterStateFlagNew
 	s.etcd, err = embed.StartEtcd(cfg)
 	if err != nil {

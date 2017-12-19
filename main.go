@@ -31,12 +31,18 @@ const (
 )
 
 var HTTPport string
+var PoolIPs string
 
-//var RAFTport string
 //var nodeID string
+
+//"192.168.30.106",
+//"192.168.30.30",
+//"192.168.30.107",
 
 func init() {
 	flag.StringVar(&HTTPport, "haddr", DefaultHTTPAddr, "Set the HTTP bind address")
+	flag.StringVar(&smartfleet.MyIP, "ip", smartfleet.DefaultIP, "Set current IP address")
+	flag.StringVar(&PoolIPs, "pool", smartfleet.DefaultIP, "Set current IP address")
 	//flag.StringVar(&RAFTport, "raddr", DefaultRaftAddr, "Set Raft bind address")
 	//flag.StringVar(&nodeID, "id", "", "Node ID")
 	flag.Usage = func() {
@@ -47,16 +53,18 @@ func init() {
 
 func main() {
 	flag.Parse()
-
-	smartFleet, err := smartfleet.New()
+	smartFleet, err := smartfleet.New(PoolIPs)
 	if err != nil {
 		// TODO: possibilité d'envoyer l'erreur à la supervision
 		panic(err)
 	}
 
+	smartFleet.NewClient()
+
 	// exposition de l'API
 	http.HandleFunc("/", smartFleet.EndPoint)
 	log.Fatal(http.ListenAndServe(HTTPport, nil))
+	//smartFleet.Work()
 }
 
 // robotino	robotino
