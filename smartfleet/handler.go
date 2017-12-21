@@ -34,7 +34,7 @@ func (s *SmartFleet) EndPoint(w http.ResponseWriter, r *http.Request) {
 		Task: bodyString,
 		States: []State{
 			State{
-				State: "QUEUED",
+				State: JobStateQueued,
 				Step:  "The job is waiting to be taken",
 				Date:  key,
 			},

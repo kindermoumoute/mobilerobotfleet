@@ -62,10 +62,9 @@ func New(poolIPs, raftPort string) (*SmartFleet, error) {
 	}
 
 	go s.runServer(raftPort)
-	//
-	//s.Status = statusAlive
-	//s.pollRate = 10 * time.Second
-	//s.heartbeatRate = 1 * time.Minute
-	//s.Heartbeat = time.Now()
+	s.Heartbeat = time.Now()
+	s.pollRate = 10 * time.Second
+	s.heartbeatRate = 1 * time.Minute
+	s.Heartbeat = time.Now()
 	return s, err
 }

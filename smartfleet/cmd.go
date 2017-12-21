@@ -1,6 +1,7 @@
 package smartfleet
 
 import (
+	"bytes"
 	"net"
 	"os/exec"
 	"strconv"
@@ -15,7 +16,7 @@ import (
 )
 
 type terminal interface {
-	runScript() ([]byte, error)
+	runScript(string) ([]byte, error)
 	getMyIP() ([]byte, error)
 	getAddr(string) ([]string, error)
 }
@@ -23,10 +24,61 @@ type terminal interface {
 type windows struct {
 }
 
-func (w windows) runScript() ([]byte, error) {
-	// "robview2_interpreter.exe" --set vitesse=100 -f test.rvw2
-	return exec.Command("C:\\Program Files\\Didactic\\RobotinoView2\\bin\\robview2_interpreter.exe", "-f", "test.rvw2").Output()
+var path = map[string]string{
+	"A": "0",
+	"B": "1",
+	"C": "2",
+	"D": "3",
+}
 
+func run(timeout int, command string, args ...string) string {
+
+	// instantiate new command
+	cmd := exec.Command(command, args...)
+
+	// get pipe to standard output
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "cmd.StdoutPipe() error: " + err.Error()
+	}
+
+	// start process via command
+	if err := cmd.Start(); err != nil {
+		return "cmd.Start() error: " + err.Error()
+	}
+
+	// setup a buffer to capture standard output
+	var buf bytes.Buffer
+
+	// create a channel to capture any errors from wait
+	done := make(chan error)
+	go func() {
+		if _, err := buf.ReadFrom(stdout); err != nil {
+			panic("buf.Read(stdout) error: " + err.Error())
+		}
+		done <- cmd.Wait()
+	}()
+
+	// block on select, and switch based on actions received
+	select {
+	case <-time.After(time.Duration(timeout) * time.Second):
+		if err := cmd.Process.Kill(); err != nil {
+			return "failed to kill: " + err.Error()
+		}
+		return "timeout reached, process killed"
+	case err := <-done:
+		if err != nil {
+			close(done)
+			return "process done, with error: " + err.Error()
+		}
+		return "process completed: " + buf.String()
+	}
+	return ""
+}
+
+func (w windows) runScript(s string) ([]byte, error) {
+	out := run(5, "\"C:\\Program Files\\Didactic\\RobotinoView2\\bin\\robview2_interpreter.exe\"", "-f", "\"C:\\Users\\ec-lille\\robotino.rvw2\"", "--set", "path="+path[s])
+	return []byte(out), nil
 }
 
 func (w windows) getMyIP() ([]byte, error) {
@@ -57,7 +109,7 @@ func (w windows) getAddr(s string) ([]string, error) {
 type other struct {
 }
 
-func (w other) runScript() ([]byte, error) {
+func (w other) runScript(s string) ([]byte, error) {
 	time.Sleep(3 * time.Second)
 	return []byte("WORKED"), nil
 }

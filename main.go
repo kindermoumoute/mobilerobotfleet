@@ -58,16 +58,17 @@ func main() {
 
 	// exposition de l'API
 	http.HandleFunc("/", smartFleet.EndPoint)
-	//go func() {
-	log.Fatal(http.ListenAndServe(":"+HTTPport, nil))
-	//}()
-	//smartFleet.Work()
+	go func() {
+		log.Fatal(http.ListenAndServe(":"+HTTPport, nil))
+	}()
+	smartFleet.Work()
 }
 
 // (DONE): implémenter la fausse abstraction, avec une API complète
 // (DONE): virtualiser un environnement avec les 5 robots dans le même réseau
 // (DONE): implémenter une abstraction utilisant etcd
-// TODO: implémenter une working queue et une running queue https://stackoverflow.com/questions/34629860/how-would-you-implement-a-working-queue-in-etcd
+// (DONE): implémenter une working queue et une running queue https://stackoverflow.com/questions/34629860/how-would-you-implement-a-working-queue-in-etcd
+// TODO: prendre les jobs et les faire
 //
 // docs :
 // https://godoc.org/github.com/coreos/etcd/clientv3
