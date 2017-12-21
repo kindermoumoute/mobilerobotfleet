@@ -46,13 +46,13 @@ func (s *SmartFleet) NewClient() {
 	//	}
 }
 
-func (s *SmartFleet) runServer() {
+func (s *SmartFleet) runServer(etcdPort string) {
 	var err error
 	cfg := embed.NewConfig()
 	cfg.Name = s.myIP
 	cfg.Dir = cfg.Name + ".etcd"
 
-	u, _ := url.Parse("http://0.0.0.0:2380")
+	u, _ := url.Parse("http://0.0.0.0:" + etcdPort)
 	cfg.LPUrls = []url.URL{
 		*u,
 	}
@@ -60,19 +60,16 @@ func (s *SmartFleet) runServer() {
 	cfg.LCUrls = []url.URL{
 		*u,
 	}
-	u, err = url.Parse("http://" + s.myIP + ":2380")
+	u, err = url.Parse("http://" + s.myIP + ":" + etcdPort)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	cfg.ClusterState = embed.ClusterStateFlagNew
 	cfg.InitialCluster = cfg.Name + "=" + u.String()
 	cfg.APUrls, _ = types.NewURLs([]string{u.String()})
 	for _, ip := range s.peer {
-		cfg.InitialCluster += "," + ip + "=http://" + ip + ":2380"
+		cfg.InitialCluster += "," + ip + "=http://" + ip + ":" + etcdPort
 	}
-
-	cfg.ClusterState = embed.ClusterStateFlagNew
 	s.etcd, err = embed.StartEtcd(cfg)
 	if err != nil {
 		log.Fatal(err)

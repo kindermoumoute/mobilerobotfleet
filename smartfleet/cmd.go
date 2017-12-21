@@ -7,6 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"strings"
+
+	"fmt"
+
 	"github.com/tatsushid/go-fastping"
 )
 
@@ -26,8 +30,20 @@ func (w windows) runScript() ([]byte, error) {
 }
 
 func (w windows) getMyIP() ([]byte, error) {
-	return []byte(MyIP), nil
+	b, err := exec.Command("ipconfig").Output()
+	if err != nil {
+		return nil, err
+	}
+	add := 0
+	if strings.Contains(string(b), "Docker") {
+		add = 1
+	}
+	tmp := strings.Split(string(b), "Adresse IPv4. . . . . . . . . . . . . .: ")
+	tmp2 := strings.Split(tmp[1+add], "\n")
+	fmt.Println("MY IP : ", tmp2[0])
+	return []byte(tmp2[0]), nil
 }
+
 func (w windows) getAddr(s string) ([]string, error) {
 	peers := []string{}
 	for _, s := range Pool {
@@ -56,7 +72,7 @@ func (w other) getAddr(s string) ([]string, error) {
 	a := []string{}
 	p := fastping.NewPinger()
 
-	for i := 1; i <= 5; i++ {
+	for i := 1; i <= 3; i++ {
 		ra, err := net.ResolveIPAddr("ip4:icmp", "mobilerobotfleet_robotino_"+strconv.Itoa(i))
 		if err != nil {
 			return nil, err

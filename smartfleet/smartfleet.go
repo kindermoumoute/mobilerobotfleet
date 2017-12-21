@@ -34,9 +34,10 @@ type SmartFleet struct {
 	etcdClient    client.Client
 	pollRate      time.Duration
 	heartbeatRate time.Duration
+	job           *Job
 }
 
-func New(poolIPs string) (*SmartFleet, error) {
+func New(poolIPs, raftPort string) (*SmartFleet, error) {
 	Pool = []string{}
 	for _, peer := range strings.Split(poolIPs, ",") {
 		Pool = append(Pool, peer)
@@ -54,12 +55,13 @@ func New(poolIPs string) (*SmartFleet, error) {
 		return s, err
 	}
 	s.myIP = strings.Trim(string(myIP), "\n")
+	s.myIP = strings.Trim(s.myIP, "\r")
 	s.peer, err = s.cmd.getAddr(s.myIP)
 	if err != nil {
 		return s, err
 	}
 
-	go s.runServer()
+	go s.runServer(raftPort)
 	//
 	//s.Status = statusAlive
 	//s.pollRate = 10 * time.Second

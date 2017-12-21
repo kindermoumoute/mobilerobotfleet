@@ -26,25 +26,20 @@ import (
 
 // default values
 const (
-	DefaultHTTPAddr = ":8080"
-	DefaultRaftAddr = ":8182"
+	DefaultHTTPAddr = "80"
+	DefaultRaftAddr = "443"
 )
 
 var HTTPport string
+var RAFTport string
 var PoolIPs string
-
-//var nodeID string
-
-//"192.168.30.106",
-//"192.168.30.30",
-//"192.168.30.107",
 
 func init() {
 	flag.StringVar(&HTTPport, "haddr", DefaultHTTPAddr, "Set the HTTP bind address")
 	flag.StringVar(&smartfleet.MyIP, "ip", smartfleet.DefaultIP, "Set current IP address")
 	flag.StringVar(&PoolIPs, "pool", smartfleet.DefaultIP, "Set current IP address")
-	//flag.StringVar(&RAFTport, "raddr", DefaultRaftAddr, "Set Raft bind address")
-	//flag.StringVar(&nodeID, "id", "", "Node ID")
+	flag.StringVar(&RAFTport, "raddr", DefaultRaftAddr, "Set Raft bind address")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <raft-data-path> \n", os.Args[0])
 		flag.PrintDefaults()
@@ -53,7 +48,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	smartFleet, err := smartfleet.New(PoolIPs)
+	smartFleet, err := smartfleet.New(PoolIPs, RAFTport)
 	if err != nil {
 		// TODO: possibilité d'envoyer l'erreur à la supervision
 		panic(err)
@@ -63,16 +58,15 @@ func main() {
 
 	// exposition de l'API
 	http.HandleFunc("/", smartFleet.EndPoint)
-	log.Fatal(http.ListenAndServe(HTTPport, nil))
+	//go func() {
+	log.Fatal(http.ListenAndServe(":"+HTTPport, nil))
+	//}()
 	//smartFleet.Work()
 }
 
-// robotino	robotino
-// root		dorp6
-
 // (DONE): implémenter la fausse abstraction, avec une API complète
 // (DONE): virtualiser un environnement avec les 5 robots dans le même réseau
-// TODO: implémenter une abstraction utilisant etcd
+// (DONE): implémenter une abstraction utilisant etcd
 // TODO: implémenter une working queue et une running queue https://stackoverflow.com/questions/34629860/how-would-you-implement-a-working-queue-in-etcd
 //
 // docs :

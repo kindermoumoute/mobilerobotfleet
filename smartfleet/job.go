@@ -5,12 +5,27 @@ import (
 	"time"
 )
 
+type Job struct {
+	Owner  string
+	Task   string
+	States []State
+}
+
+type State struct {
+	State string
+	Step  string
+	Date  time.Time
+}
+
+func (s *SmartFleet) poll() {
+
+}
+
 func (s *SmartFleet) Work() {
 	log.Print("starting worker")
 	pollTick := time.Tick(s.pollRate)
 	hbTick := time.Tick(s.heartbeatRate)
 	stayAlive := true
-	// go func() {
 	for stayAlive {
 		select {
 		case now := <-hbTick:
@@ -19,11 +34,9 @@ func (s *SmartFleet) Work() {
 			//s.save()
 		case <-pollTick:
 			log.Print("poll tick")
-			//if s.currentJob == nil {
-			//	s.poll()
-			//}
+			if s.job == nil {
+				s.poll()
+			}
 		}
 	}
 }
-
-// see poll function : https://github.com/OpsLabJPL/etcdq/blob/master/etcdq/worker.go

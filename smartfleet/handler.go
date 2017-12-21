@@ -5,28 +5,48 @@ import (
 	"fmt"
 	"net/http"
 
+	"encoding/json"
+	"io/ioutil"
+
+	"time"
+
+	"strconv"
+
 	"github.com/coreos/etcd/client"
 )
 
 func (s *SmartFleet) EndPoint(w http.ResponseWriter, r *http.Request) {
-	out, err := s.cmd.runScript()
+	//out, err := s.cmd.runScript()
+	//if err != nil {
+	//	fmt.Fprintf(w, "Erreur: %s", err)
+	//} else {
+	//	fmt.Fprintf(w, "Programme exécuté : %s", out)
+	//}
+	defer r.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Fprintf(w, "Erreur: %s", err)
-	} else {
-		fmt.Fprintf(w, "Programme exécuté : %s", out)
+		return
 	}
-
+	bodyString := string(bodyBytes)
+	key := time.Now()
+	j := Job{
+		Task: bodyString,
+		States: []State{
+			State{
+				State: "QUEUED",
+				Step:  "The job is waiting to be taken",
+				Date:  key,
+			},
+		},
+	}
+	bolB, _ := json.Marshal(j)
 	kAPI := client.NewKeysAPI(s.etcdClient)
-
-	// create a new key /foo with the value "bar"
-	_, err = kAPI.Create(context.Background(), "/foo", "bar")
+	resp, err := kAPI.Set(context.Background(), "/jobs/"+strconv.Itoa(int(key.UnixNano())), string(bolB), nil)
 	if err != nil {
 		fmt.Fprintf(w, "\nErreur etcd: %s", err)
+	} else {
+		fmt.Fprintf(w, "\n%s", resp)
 	}
 
-	//// delete the newly created key only if the value is still "bar"
-	//_, err = kAPI.Delete(context.Background(), "/foo", &client.DeleteOptions{PrevValue: "bar"})
-	//if err != nil {
-	//	// handle error
-	//}
 }
