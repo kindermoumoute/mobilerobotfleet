@@ -11,41 +11,21 @@ import (
 	"github.com/coreos/etcd/pkg/types"
 )
 
+// client runs on localhost
 func (s *SmartFleet) NewClient() {
 	var err error
-	cfg := client.Config{ //192.168.30.107
-		Endpoints: []string{"http://127.0.0.1:2379"},
-		Transport: client.DefaultTransport,
-		// set timeout per request to fail fast when the target endpoint is unavailable
+	cfg := client.Config{
+		Endpoints:               []string{"http://127.0.0.1:2379"},
+		Transport:               client.DefaultTransport,
 		HeaderTimeoutPerRequest: time.Second,
 	}
 	s.etcdClient, err = client.New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//s.Kapi = client.NewKeysAPI(s.etcdClient)
-	//// set "/foo" key with "bar" value
-	//log.Print("Setting '/foo' key with 'bar' value")
-	//	resp, err := s.Kapi.Set(context.Background(), "/foo", "bar", nil)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	} else {
-	//		// print common key info
-	//		log.Printf("Set is done. Metadata is %q\n", resp)
-	//	}
-	//	// get "/foo" key's value
-	//	log.Print("Getting '/foo' key value")
-	//	resp, err = s.Kapi.Get(context.Background(), "/foo", nil)
-	//	if err != nil {
-	//		log.Fatal(err)
-	//	} else {
-	//		// print common key info
-	//		log.Printf("Get is done. Metadata is %q\n", resp)
-	//		// print value
-	//		log.Printf("%q key has %q value\n", resp.Node.Key, resp.Node.Value)
-	//	}
 }
 
+// server listens on all interfaces
 func (s *SmartFleet) runServer(etcdPort string) {
 	var err error
 	cfg := embed.NewConfig()

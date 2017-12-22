@@ -7,14 +7,12 @@ import (
 
 	"encoding/json"
 
-	"fmt"
-
 	"github.com/coreos/etcd/client"
 )
 
 const (
 	JobStateQueued  = "QUEUED"
-	JobStateStarted = "STARTED"
+	JobStateStarted = "TAKEN"
 )
 
 type Job struct {
@@ -31,16 +29,20 @@ type State struct {
 
 func (s *SmartFleet) start(j *Job) {
 	out, err := s.cmd.runScript(j.Task)
-	fmt.Println("TRAVAILLE TERMINE !", string(out), err)
+	if err == nil {
+		log.Println("Job "+j.Task+" done! ", string(out))
+	} else {
+		log.Println("Job failed: ", err)
+	}
 	s.job = nil
 }
 
 func (s *SmartFleet) poll() {
-	log.Print("polling for jobs")
+	// polling for jobs
 	e := client.NewKeysAPI(s.etcdClient)
 	resp, err := e.Get(context.Background(), "/jobs/", &client.GetOptions{Recursive: true, Sort: true})
 	if err != nil {
-		log.Printf("ERROR: %s", err)
+		log.Printf("No job found")
 		return
 	}
 	var job *Job
@@ -66,52 +68,49 @@ func (job *Job) setState(jobState string, step string) {
 }
 
 func (s *SmartFleet) tryAllocateJob(node *client.Node, e client.KeysAPI) (job *Job, err error) {
+
 	j := &Job{}
 	err = json.Unmarshal([]byte(node.Value), j)
 	if err != nil {
-		log.Printf("ERROR: %s", err)
+		log.Printf("could not unmarshal: %s", err)
 		return
 	}
 	job = j
-	// Current state is in last position
+
 	state := job.States[len(job.States)-1]
 	if state.State != JobStateQueued {
-		// Job is already allocated / in progress
 		job = nil
 		return
 	}
-	// Attempt to allocate this job atomically
+
 	job.setState(JobStateStarted, "Allocated")
 	job.Owner = s.myIP
-	//job.i = path.Base(node.Key)
 	b, err := json.Marshal(job)
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		job = nil
 		return
 	}
+
+	// Attempt to allocate this job atomically
 	_, err = e.Set(context.Background(), node.Key, string(b), nil)
 	if err != nil {
 		log.Printf("ERROR: %s", err)
 		job = nil
-		return
 	}
 	return
 }
 
 func (s *SmartFleet) Work() {
-	log.Print("starting worker")
-	pollTick := time.Tick(s.pollRate)
-	hbTick := time.Tick(s.heartbeatRate)
+	pollTick := time.Tick(10 * time.Second)
+	hbTick := time.Tick(1 * time.Minute)
 	stayAlive := true
 	for stayAlive {
 		select {
-		case now := <-hbTick:
-			log.Print("heartbeat")
-			s.Heartbeat = now
-			//s.save()
+		case <-hbTick:
+			//log.Print("heartbeat")
 		case <-pollTick:
-			log.Print("poll tick")
+			//log.Print("poll tick")
 			if s.job == nil {
 				s.poll()
 			}

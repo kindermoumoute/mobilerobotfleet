@@ -2,26 +2,19 @@ package smartfleet
 
 import (
 	"context"
-	"fmt"
-	"net/http"
-
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-
-	"time"
-
+	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/coreos/etcd/client"
 )
 
 func (s *SmartFleet) EndPoint(w http.ResponseWriter, r *http.Request) {
-	//out, err := s.cmd.runScript()
-	//if err != nil {
-	//	fmt.Fprintf(w, "Erreur: %s", err)
-	//} else {
-	//	fmt.Fprintf(w, "Programme exécuté : %s", out)
-	//}
+
+	// read body request
 	defer r.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -29,8 +22,10 @@ func (s *SmartFleet) EndPoint(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	bodyString := string(bodyBytes)
+
+	// create new job
 	key := time.Now()
-	j := Job{
+	job := Job{
 		Task: bodyString,
 		States: []State{
 			State{
@@ -40,13 +35,15 @@ func (s *SmartFleet) EndPoint(w http.ResponseWriter, r *http.Request) {
 			},
 		},
 	}
-	bolB, _ := json.Marshal(j)
-	kAPI := client.NewKeysAPI(s.etcdClient)
-	resp, err := kAPI.Set(context.Background(), "/jobs/"+strconv.Itoa(int(key.UnixNano())), string(bolB), nil)
+	jsonJob, _ := json.Marshal(job)
+	jobKey := strconv.Itoa(int(key.UnixNano()))
+	api := client.NewKeysAPI(s.etcdClient)
+
+	// push new job to the queue
+	resp, err := api.Set(context.Background(), "/jobs/"+jobKey, string(jsonJob), nil)
 	if err != nil {
-		fmt.Fprintf(w, "\nErreur etcd: %s", err)
+		fmt.Fprintf(w, "\netcd client error: %s", err)
 	} else {
 		fmt.Fprintf(w, "\n%s", resp)
 	}
-
 }

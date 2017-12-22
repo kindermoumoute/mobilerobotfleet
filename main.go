@@ -24,7 +24,7 @@ import (
 	"github.com/kindermoumoute/mobilerobotfleet/smartfleet"
 )
 
-// default values
+// default ports
 const (
 	DefaultHTTPAddr = "80"
 	DefaultRaftAddr = "443"
@@ -39,7 +39,6 @@ func init() {
 	flag.StringVar(&smartfleet.MyIP, "ip", smartfleet.DefaultIP, "Set current IP address")
 	flag.StringVar(&PoolIPs, "pool", smartfleet.DefaultIP, "Set current IP address")
 	flag.StringVar(&RAFTport, "raddr", DefaultRaftAddr, "Set Raft bind address")
-
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <raft-data-path> \n", os.Args[0])
 		flag.PrintDefaults()
@@ -48,28 +47,22 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	// set config and run etcd
 	smartFleet, err := smartfleet.New(PoolIPs, RAFTport)
 	if err != nil {
-		// TODO: possibilité d'envoyer l'erreur à la supervision
 		panic(err)
 	}
 
+	// create etcd client
 	smartFleet.NewClient()
 
-	// exposition de l'API
+	// expose the API
 	http.HandleFunc("/", smartFleet.EndPoint)
 	go func() {
 		log.Fatal(http.ListenAndServe(":"+HTTPport, nil))
 	}()
+
+	// run the worker
 	smartFleet.Work()
 }
-
-// (DONE): implémenter la fausse abstraction, avec une API complète
-// (DONE): virtualiser un environnement avec les 5 robots dans le même réseau
-// (DONE): implémenter une abstraction utilisant etcd
-// (DONE): implémenter une working queue et une running queue https://stackoverflow.com/questions/34629860/how-would-you-implement-a-working-queue-in-etcd
-// TODO: prendre les jobs et les faire
-//
-// docs :
-// https://godoc.org/github.com/coreos/etcd/clientv3
-// https://coreos.com/etcd/docs/latest/learning/api.html

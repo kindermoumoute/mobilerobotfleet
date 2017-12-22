@@ -2,15 +2,13 @@ package smartfleet
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
-
-	"strings"
-
-	"fmt"
 
 	"github.com/tatsushid/go-fastping"
 )
@@ -18,7 +16,7 @@ import (
 type terminal interface {
 	runScript(string) ([]byte, error)
 	getMyIP() ([]byte, error)
-	getAddr(string) ([]string, error)
+	getPeersAddr(string) ([]string, error)
 }
 
 type windows struct {
@@ -81,6 +79,7 @@ func (w windows) runScript(s string) ([]byte, error) {
 	return []byte(out), nil
 }
 
+// Hacky way to get my local IP on windows
 func (w windows) getMyIP() ([]byte, error) {
 	b, err := exec.Command("ipconfig").Output()
 	if err != nil {
@@ -96,7 +95,7 @@ func (w windows) getMyIP() ([]byte, error) {
 	return []byte(tmp2[0]), nil
 }
 
-func (w windows) getAddr(s string) ([]string, error) {
+func (w windows) getPeersAddr(s string) ([]string, error) {
 	peers := []string{}
 	for _, s := range Pool {
 		if s != MyIP {
@@ -119,15 +118,15 @@ func (w other) getMyIP() ([]byte, error) {
 
 }
 
-func (w other) getAddr(s string) ([]string, error) {
+func (w other) getPeersAddr(s string) ([]string, error) {
 	var mutex = &sync.Mutex{}
 	a := []string{}
 	p := fastping.NewPinger()
 
-	for i := 1; i <= 3; i++ {
+	for i := 1; i < 6; i++ {
 		ra, err := net.ResolveIPAddr("ip4:icmp", "mobilerobotfleet_robotino_"+strconv.Itoa(i))
 		if err != nil {
-			return nil, err
+			break
 		}
 		p.AddIPAddr(ra)
 	}

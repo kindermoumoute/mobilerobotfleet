@@ -5,7 +5,7 @@ services:
     volumes:
       - .:/robotino
     command: /robotino/mobilerobotfleet
-    scale: 3
+    scale: 5
     expose:
       - "2380"
       - "80"
